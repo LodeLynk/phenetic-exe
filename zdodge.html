@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v10</title>
+  <title>ZDODGE.EXE v11</title>
   <style>
     html, body {
       margin: 0;
@@ -50,17 +50,26 @@
     .controls button:active {
       background: #00cc00;
     }
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
   <div id="screen"></div>
-  <div class="controls">
+  <div class="controls" id="controls" style="display:none;">
     <button onclick="moveLeft()">◀</button>
     <button onclick="shoot()">I</button>
     <button onclick="moveRight()">▶</button>
   </div>
   <script>
     const screen = document.getElementById("screen");
+    const controls = document.getElementById("controls");
     const width = 15;
     const height = 22;
     let interval = 1200;
@@ -74,37 +83,30 @@
     let gameInterval;
     let ammo = 3;
     let linesDropped = 0;
+    let trailX = playerX;
 
-    let trailX = playerX; // current path x
-
-    function initGrid() {
+    function initEmptyGrid() {
       grid = [];
       for (let i = 0; i < height; i++) {
-        grid.push(Array(width).fill("Z"));
+        grid.push(Array(width).fill(" "));
       }
       grid[playerY][playerX] = playerChar;
     }
 
     function createWavyRow() {
       const row = Array(width).fill("Z");
-
-      // Random shift left/right
       const direction = Math.random() < 0.5 ? -1 : 1;
       const nextX = Math.max(1, Math.min(width - 2, trailX + direction));
       const corner = nextX !== trailX;
 
-      // Apply 6-tile arc clear
       row[nextX] = " ";
       if (corner) {
-        row[trailX] = " "; // side step
-        if (Math.random() < 0.7) {
-          if (nextX + direction < width - 1 && nextX + direction > 0) {
-            row[nextX + direction] = " "; // clear above-right or left
-          }
+        row[trailX] = " ";
+        if (nextX + direction < width - 1 && nextX + direction > 0) {
+          row[nextX + direction] = " ";
         }
       }
 
-      // R spawn chance
       const rChance = Math.min(0.3 + linesDropped / 150, 0.9);
       if (Math.random() < rChance) {
         const rPos = Math.floor(Math.random() * width);
@@ -120,7 +122,6 @@
 
       linesDropped++;
 
-      // Check hit
       if (grid[playerY - 1][playerX] === "Z") {
         grid[playerY][playerX] = "X";
         gameOver = true;
@@ -145,11 +146,13 @@
       grid[playerY][playerX] = playerChar;
 
       screen.innerText = renderGrid();
-
-      // Speed increase over time — no cap
       interval = Math.max(80, 1200 - linesDropped * 10);
       clearInterval(gameInterval);
       gameInterval = setInterval(dropRow, interval);
+    }
+
+    function renderGrid() {
+      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo;
     }
 
     function moveLeft() {
@@ -184,19 +187,28 @@
       screen.innerText = renderGrid();
     }
 
-    function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo;
+    function startCinematic() {
+      screen.innerHTML = "<span class='cursor'>_</span><br>";
+      setTimeout(() => {
+        screen.innerHTML = "A<span class='cursor'>_</span><br>";
+      }, 500);
+      setTimeout(() => {
+        screen.innerHTML = ("\n".repeat(height - 2) + "\n" + " ".repeat(playerX * 2) + "A<br>");
+        initEmptyGrid();
+        controls.style.display = "flex";
+        setTimeout(() => {
+          screen.innerText = renderGrid();
+          gameInterval = setInterval(dropRow, interval);
+        }, 1000);
+      }, 2000);
     }
 
+    document.addEventListener("DOMContentLoaded", startCinematic);
     document.addEventListener("keydown", function(e) {
       if (e.key === "ArrowLeft") moveLeft();
       else if (e.key === "ArrowRight") moveRight();
       else if (e.key.toLowerCase() === "i" || e.key === " ") shoot();
     });
-
-    initGrid();
-    screen.innerText = renderGrid();
-    gameInterval = setInterval(dropRow, interval);
   </script>
 </body>
 </html>
