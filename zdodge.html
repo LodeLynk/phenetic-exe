@@ -92,7 +92,6 @@
 </head>
 <body>
 <div id="screen"></div><button onclick="toggleMenu()" style="font-size:12px; margin-top:-5px;">[ MENU ]</button>
-<button onclick="toggleMenu()">[ MENU ]</button>
 <div id="menuOverlay">
 <p>[ SETTINGS ]</p>
 <button onclick="resumeGame()">&gt; Resume</button>
@@ -100,20 +99,28 @@
 <button onclick="closeGame()">&gt; Exit Game</button>
 </div>
 <div class="controls">
-<div class="fire">
-<button onclick="shoot()">I</button>
+  <div class="fire">
+    <button onclick="shoot()">I</button>
+  </div>
+  <div class="dpad" style="
+    display: grid;
+    grid-template-areas: 'empty up empty'
+                         'left center right'
+                         'empty down empty';
+    grid-template-columns: 40px 40px 40px;
+    grid-template-rows: 40px 40px 40px;
+    gap: 2px;
+    justify-content: center;
+    align-items: center;">
+    
+    <button style="grid-area: up;" onclick="moveUp()">↑</button>
+    <button style="grid-area: down;" onclick="moveDown()">↓</button>
+    <button style="grid-area: left;" onclick="moveLeft()">←</button>
+    <button style="grid-area: right;" onclick="moveRight()">→</button>
+    <button class="center" style="grid-area: center; background:#004400; pointer-events:none;"></button>
+  </div>
 </div>
-<div class="dpad" style="display: grid; grid-template-areas: 'up up up' 'left center right' 'down down down'; grid-template-columns: 40px 40px 40px; grid-template-rows: 40px 40px 40px; gap: 2px; justify-content: center; align-items: center;">
-<button onclick="moveUp()" style="grid-area: up;">↑</button>
-<button class="center" style="grid-area: center;"></button>
-<button onclick="moveRight()" style="grid-area: right;">→</button>
-<button onclick="moveLeft()" style="grid-area: left;">←</button>
-<button class="center" style="grid-area: center;"></button>
-<button onclick="moveDown()" style="grid-area: down;">↓</button>
-<div></div><div></div><div></div>
-</div>
-</div>
-<script>
+    <script>
     const screen = document.getElementById("screen");
     const menuOverlay = document.getElementById("menuOverlay");
     const speedCapStatus = document.getElementById("speedCapStatus");
