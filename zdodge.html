@@ -116,6 +116,7 @@
     let linesDropped = 0;
     let trailX = playerX;
     let gamePaused = false;
+let retryCount = 0;
 
     function initGrid() {
       grid = [];
@@ -154,6 +155,13 @@
         grid[playerY][playerX] = "X";
         gameOver = true;
         screen.innerText = renderGrid() + "\nYOU GOT SQUISHED. GAME OVER.";
+        setTimeout(() => {
+          screen.innerText = "REBOOTING...";
+          setTimeout(() => {
+            restartGame();
+          }, 2000);
+        }, 2000);
+        return;
         return;
       }
 
@@ -184,7 +192,7 @@
     }
 
     function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo;
+      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo + "    RETRIES: " + retryCount;
     }
 
     function moveLeft() {
@@ -257,7 +265,23 @@
       location.reload();
     }
 
-    function startGame() {
+    
+    function restartGame() {
+      retryCount++;
+      playerX = Math.floor(width / 2);
+      playerY = height - 4;
+      ammo = 3;
+      linesDropped = 0;
+      trailX = playerX;
+      gameOver = false;
+      initGrid();
+      screen.innerText = renderGrid();
+      clearInterval(gameInterval);
+      gameInterval = setInterval(dropRow, interval);
+    }
+
+
+function startGame() {
       initGrid();
       screen.innerText = renderGrid();
       gameInterval = setInterval(dropRow, interval);
