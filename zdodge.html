@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v12</title>
+  <title>ZDODGE.EXE v13</title>
   <style>
     html, body {
       margin: 0;
@@ -32,18 +32,34 @@
     .controls {
       display: flex;
       justify-content: space-between;
-      padding: 8px 10px 24px 10px;
+      padding: 0 10px 16px 10px;
       width: 100%;
       max-width: 480px;
+      flex-wrap: wrap;
     }
-    .fire, .dpad {
+    .fire {
       display: flex;
       flex-direction: column;
-      align-items: center;
-    }
-    .dpad-buttons {
-      display: flex;
       justify-content: center;
+      align-items: center;
+      width: 30%;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: 40px 40px 40px;
+      grid-template-rows: 40px 40px 40px;
+      gap: 2px;
+      justify-content: center;
+      align-items: center;
+      width: 60%;
+    }
+    .dpad button {
+      width: 40px;
+      height: 40px;
+    }
+    .dpad button.center {
+      background: #004400;
+      pointer-events: none;
     }
     button {
       background: #00FF00;
@@ -54,18 +70,9 @@
       border: none;
       margin: 2px;
       cursor: pointer;
-      min-width: 40px;
     }
     button:active {
       background: #00cc00;
-    }
-    .cursor {
-      display: inline-block;
-      width: 10px;
-      animation: blink 1s step-start infinite;
-    }
-    @keyframes blink {
-      50% { opacity: 0; }
     }
     #menuOverlay {
       position: absolute;
@@ -84,6 +91,7 @@
 </head>
 <body>
   <div id="screen"></div>
+  <button onclick="toggleMenu()">[ MENU ]</button>
   <div id="menuOverlay">
     <p>[ SETTINGS ]</p>
     <button onclick="resumeGame()">> Resume</button>
@@ -93,15 +101,15 @@
   <div class="controls">
     <div class="fire">
       <button onclick="shoot()">I</button>
-      <button onclick="toggleMenu()">MENU</button>
     </div>
     <div class="dpad">
       <button onclick="moveUp()">↑</button>
-      <div class="dpad-buttons">
-        <button onclick="moveLeft()">←</button>
-        <button onclick="moveDown()">↓</button>
-        <button onclick="moveRight()">→</button>
-      </div>
+      <button class="center"></button>
+      <button onclick="moveRight()">→</button>
+      <button onclick="moveLeft()">←</button>
+      <button class="center"></button>
+      <button onclick="moveDown()">↓</button>
+      <div></div><div></div><div></div>
     </div>
   </div>
   <script>
@@ -117,7 +125,7 @@
 
     let grid = [];
     let playerX = Math.floor(width / 2);
-    let playerY = height - 4; // 3 rows up
+    let playerY = height - 4;
     let gameOver = false;
     let gameInterval;
     let ammo = 3;
@@ -180,12 +188,16 @@
         ammo += 3;
       }
 
-      for (let x = 0; x < width; x++) {
-        if (grid[playerY][x] === playerChar) grid[playerY][x] = " ";
+      // Clear old player position
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (grid[y][x] === playerChar) grid[y][x] = " ";
+        }
       }
-      grid[playerY][playerX] = playerChar;
 
+      grid[playerY][playerX] = playerChar;
       screen.innerText = renderGrid();
+
       interval = speedCap ? Math.max(250, 1200 - linesDropped * 10) : Math.max(80, 1200 - linesDropped * 10);
       clearInterval(gameInterval);
       gameInterval = setInterval(dropRow, interval);
