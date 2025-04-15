@@ -26,13 +26,18 @@
     @keyframes blink {
       50% { opacity: 0; }
     }
+    #ghostInput {
+      position: absolute;
+      left: -9999px;
+    }
   </style>
 </head>
-<body>
+<body onload="document.getElementById('ghostInput').focus();">
   <div id="screen">PHONETIC CHECK v1.00
 SYSTEM READY
 </div>
   <span id="cursor">_</span>
+  <input type="text" id="ghostInput" autofocus />
   <script>
     const phonetics = {
       A: "ALPHA", B: "BRAVO", C: "CHARLIE", D: "DELTA", E: "ECHO",
@@ -47,8 +52,8 @@ SYSTEM READY
     let state = 'look'; // 'look', 'write', 'check'
     let userInput = '';
 
-    document.addEventListener("keydown", function(e) {
-      const key = e.key.toUpperCase();
+    function handleKeyInput(key) {
+      key = key.toUpperCase();
 
       if (state === 'look' && phonetics[key]) {
         currentLetter = key;
@@ -79,6 +84,13 @@ SYSTEM READY
         }
         render();
       }
+    }
+
+    document.getElementById("ghostInput").addEventListener("input", function(e) {
+      const val = e.target.value.toUpperCase();
+      const key = val.slice(-1);
+      handleKeyInput(key);
+      e.target.value = '';
     });
 
     function render() {
