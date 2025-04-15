@@ -19,8 +19,8 @@
       white-space: pre-wrap;
       word-wrap: break-word;
     }
-    .cursor::after {
-      content: '_';
+    #cursor {
+      display: inline-block;
       animation: blink 1s step-start infinite;
     }
     @keyframes blink {
@@ -32,6 +32,7 @@
   <div id="screen">PHONETIC CHECK v1.00
 SYSTEM READY
 </div>
+  <span id="cursor">_</span>
   <script>
     const phonetics = {
       A: "ALPHA", B: "BRAVO", C: "CHARLIE", D: "DELTA", E: "ECHO",
@@ -51,7 +52,7 @@ SYSTEM READY
 
       if (state === 'look' && phonetics[key]) {
         currentLetter = key;
-        log.push(key + " → " + phonetics[key]);
+        log.push(key + " _ " + phonetics[key]);
         render();
 
         setTimeout(() => {
@@ -59,7 +60,7 @@ SYSTEM READY
           log.push("TYPE PHONETIC FOR " + currentLetter + ":");
           state = 'write';
           render();
-        }, 1500);
+        }, 1750);
 
       } else if (state === 'write') {
         if (key === "BACKSPACE") {
@@ -69,7 +70,7 @@ SYSTEM READY
         } else if (key === "ENTER") {
           log.push("TYPE PHONETIC FOR " + currentLetter + ": " + userInput);
           setTimeout(() => {
-            log.push(currentLetter + " → " + phonetics[currentLetter]);
+            log.push(currentLetter + " _ " + phonetics[currentLetter]);
             userInput = '';
             currentLetter = '';
             state = 'look';
@@ -85,7 +86,7 @@ SYSTEM READY
       if (state === 'write') {
         displayLog[displayLog.length - 1] = "TYPE PHONETIC FOR " + currentLetter + ": " + userInput;
       }
-      document.getElementById("screen").textContent = displayLog.join("\n") + "\n_";
+      document.getElementById("screen").textContent = displayLog.join("\n");
     }
 
     render();
