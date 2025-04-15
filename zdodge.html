@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v8</title>
+  <title>ZDODGE.EXE v9</title>
   <style>
     html, body {
       margin: 0;
@@ -32,7 +32,7 @@
     .controls {
       display: flex;
       justify-content: space-around;
-      padding: 8px 10px 24px 10px; /* bottom lifted */
+      padding: 8px 10px 24px 10px;
       width: 100%;
       max-width: 480px;
     }
@@ -63,7 +63,8 @@
     const screen = document.getElementById("screen");
     const width = 15;
     const height = 22;
-    let interval = 1000;
+    let baseInterval = 1000;
+    let interval = baseInterval;
     const playerChar = "A";
     const refillChar = "R";
 
@@ -74,6 +75,7 @@
     let gameInterval;
     let ammo = 3;
     let frameCount = 0;
+    let linesDropped = 0;
 
     function initGrid() {
       grid = [];
@@ -85,24 +87,28 @@
 
     function createRow(prevGap) {
       const row = Array(width).fill("Z");
-      const pathStart = Math.max(1, prevGap - 1);
-      const pathEnd = Math.min(width - 2, prevGap + 1);
-      for (let i = pathStart; i <= pathEnd; i++) {
-        row[i] = " ";
-      }
-      // Add refill
-      if (frameCount % 5 === 0 && Math.random() < 0.7) {
+      const newGap = Math.max(1, Math.min(width - 2, prevGap + (Math.random() < 0.5 ? -1 : 1)));
+      row[newGap - 1] = " ";
+      row[newGap] = " ";
+      row[newGap + 1] = " ";
+
+      // Dynamic ammo chance
+      const ammoChance = Math.min(0.3 + linesDropped / 200, 0.8);
+      if (Math.random() < ammoChance) {
         const rPos = Math.floor(Math.random() * width);
         if (row[rPos] === " ") row[rPos] = refillChar;
       }
-      return { row, gap: prevGap };
+
+      return { row, gap: newGap };
     }
 
     function dropRow() {
       if (gameOver) return;
 
       frameCount++;
+      linesDropped++;
 
+      // Check hit
       if (grid[playerY - 1][playerX] === "Z") {
         grid[playerY][playerX] = "X";
         gameOver = true;
@@ -110,16 +116,17 @@
         return;
       }
 
+      // Drop rows
       for (let i = height - 1; i > 0; i--) {
         grid[i] = [...grid[i - 1]];
       }
 
-      const prevGap = grid[1].indexOf(" ") !== -1 ? grid[1].indexOf(" ") : Math.floor(Math.random() * width);
-      const { row: newRow } = createRow(prevGap);
+      const prevGap = grid[1].findIndex(cell => cell === " ");
+      const { row: newRow } = createRow(prevGap >= 0 ? prevGap : Math.floor(Math.random() * width));
       grid[0] = newRow;
 
       if (grid[playerY][playerX] === refillChar) {
-        ammo = Math.min(ammo + 3, 9);
+        ammo += 3;
       }
 
       for (let x = 0; x < width; x++) {
@@ -128,7 +135,15 @@
       grid[playerY][playerX] = playerChar;
 
       screen.innerText = renderGrid();
-      interval = Math.max(300, interval - 5);
+
+      // Tetris-style speed levels
+      if (linesDropped < 20) interval = 1000;
+      else if (linesDropped < 40) interval = 800;
+      else if (linesDropped < 60) interval = 600;
+      else if (linesDropped < 80) interval = 500;
+      else if (linesDropped < 100) interval = 400;
+      else interval = 300;
+
       clearInterval(gameInterval);
       gameInterval = setInterval(dropRow, interval);
     }
@@ -166,7 +181,7 @@
     }
 
     function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n") + `\nAMMO: ${ammo}`;
+      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo;
     }
 
     document.addEventListener("keydown", function(e) {
