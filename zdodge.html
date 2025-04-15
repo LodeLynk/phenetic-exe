@@ -14,84 +14,108 @@
       padding: 20px;
       font-size: 18px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      justify-content: space-between;
     }
     #screen {
       white-space: pre;
       line-height: 1.2;
-      margin-bottom: 10px;
+      flex-grow: 1;
+      text-align: left;
+    }
+    .controls {
+      display: none;
+      justify-content: space-around;
+      margin: 10px 0;
     }
     .controls button {
       background: #00FF00;
       color: black;
       font-family: monospace;
-      font-size: 18px;
-      padding: 10px 20px;
-      margin: 0 10px;
+      font-size: 14px;
+      padding: 8px 16px;
       border: none;
       cursor: pointer;
     }
     .controls button:active {
       background: #00cc00;
     }
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
   <div id="screen"></div>
-  <div class="controls">
+  <div class="controls" id="controls">
     <button onclick="moveLeft()">◀ LEFT</button>
     <button onclick="moveRight()">RIGHT ▶</button>
   </div>
   <script>
     const screen = document.getElementById("screen");
+    const controls = document.getElementById("controls");
     const width = 15;
-    const height = 12;
-    const interval = 1000;
+    const height = 14;
+    let interval = 1000;
     const playerChar = "A";
-
     let playerPos = Math.floor(width / 2);
+    let gapPos = playerPos;
     let grid = [];
+    let gameOver = false;
+    let gameInterval;
 
-    function createRow() {
+    function createNavigableRow(prevGap) {
       const row = Array(width).fill("Z");
-      const gap = Math.floor(Math.random() * width);
-      row[gap] = " ";
-      return row;
+      const options = [prevGap];
+      if (prevGap > 0) options.push(prevGap - 1);
+      if (prevGap < width - 1) options.push(prevGap + 1);
+      const newGap = options[Math.floor(Math.random() * options.length)];
+      row[newGap] = " ";
+      return { row, newGap };
     }
 
     function initGrid() {
       grid = [];
-      for (let i = 0; i < height - 3; i++) {
-        grid.push(Array(width).fill(" "));
+      for (let i = 0; i < height - 1; i++) {
+        const { row, newGap } = createNavigableRow(gapPos);
+        grid.push(row);
+        gapPos = newGap;
       }
-      grid.push(Array(width).fill(" "));
-      grid.push(Array(width).fill(" "));
       const bottom = Array(width).fill(" ");
-      bottom[playerPos] = playerChar;
       grid.push(bottom);
+    }
+
+    function renderGrid() {
+      return grid.map(row => row.join(" ")).join("\n");
     }
 
     function updateGrid() {
       if (gameOver) return;
 
-      // Check if player got squished
       if (grid[height - 2][playerPos] === "Z") {
         gameOver = true;
         screen.innerText = renderGrid() + "\n\nYOU GOT SQUISHED. GAME OVER.";
         return;
       }
 
-      const newRow = createRow();
-      grid.shift(); // Remove top
-      grid.splice(height - 2, 1, newRow); // Row above player
+      const { row: newRow, newGap } = createNavigableRow(gapPos);
+      gapPos = newGap;
+      grid.shift();
+      grid.splice(height - 2, 1, newRow);
       const bottom = Array(width).fill(" ");
       bottom[playerPos] = playerChar;
       grid[height - 1] = bottom;
-
       screen.innerText = renderGrid();
-    }
-
-    function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n");
+      interval = Math.max(300, interval - 10);
+      clearInterval(gameInterval);
+      gameInterval = setInterval(updateGrid, interval);
     }
 
     function moveLeft() {
@@ -115,15 +139,28 @@
       screen.innerText = renderGrid();
     }
 
+    // Cinematic boot
+    function startCinematic() {
+      screen.innerText = "█" + "\n";
+      setTimeout(() => {
+        screen.innerText = "A<span class='cursor'>_</span>\n";
+      }, 500);
+      setTimeout(() => {
+        screen.innerText = "\n".repeat(height - 2) + "\n" + " ".repeat(playerPos * 2) + "A" + "\n";
+        controls.style.display = "flex";
+        initGrid();
+        const bottom = Array(width).fill(" ");
+        bottom[playerPos] = playerChar;
+        grid[height - 1] = bottom;
+        gameInterval = setInterval(updateGrid, interval);
+      }, 2000);
+    }
+
+    document.addEventListener("DOMContentLoaded", startCinematic);
     document.addEventListener("keydown", function(e) {
       if (e.key === "ArrowLeft") moveLeft();
       else if (e.key === "ArrowRight") moveRight();
     });
-
-    let gameOver = false;
-    initGrid();
-    screen.innerText = renderGrid();
-    const gameInterval = setInterval(updateGrid, interval);
   </script>
 </body>
 </html>
