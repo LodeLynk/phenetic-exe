@@ -6,38 +6,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ZDODGE.EXE</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       background: black;
       color: #00FF00;
       font-family: monospace;
-      padding: 20px;
       font-size: 18px;
-      text-align: center;
+      overflow: hidden;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      height: 100vh;
       justify-content: space-between;
     }
     #screen {
       white-space: pre;
       line-height: 1.2;
       flex-grow: 1;
+      padding: 10px;
       text-align: left;
+      overflow-y: hidden;
     }
     .controls {
       display: none;
+      flex-shrink: 0;
+      display: flex;
       justify-content: space-around;
-      margin: 10px 0;
+      padding: 5px 10px 15px 10px;
     }
     .controls button {
       background: #00FF00;
       color: black;
       font-family: monospace;
       font-size: 14px;
-      padding: 8px 16px;
+      padding: 8px 12px;
       border: none;
       cursor: pointer;
+      flex: 1;
+      margin: 0 5px;
     }
     .controls button:active {
       background: #00cc00;
@@ -55,8 +61,9 @@
 <body>
   <div id="screen"></div>
   <div class="controls" id="controls">
-    <button onclick="moveLeft()">◀ LEFT</button>
-    <button onclick="moveRight()">RIGHT ▶</button>
+    <button onclick="moveLeft()">◀</button>
+    <button onclick="shoot()">I</button>
+    <button onclick="moveRight()">▶</button>
   </div>
   <script>
     const screen = document.getElementById("screen");
@@ -65,12 +72,12 @@
     const height = 14;
     let interval = 1000;
     const playerChar = "A";
-
     let playerPos = Math.floor(width / 2);
     let gapPos = playerPos;
     let grid = [];
     let gameOver = false;
     let gameInterval;
+    let ammo = 3;
 
     function createNavigableRow(prevGap) {
       const row = Array(width).fill("Z");
@@ -94,7 +101,7 @@
     }
 
     function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n");
+      return grid.map(row => row.join(" ")).join("\n") + `\n\nAMMO: ${ammo}`;
     }
 
     function updateGrid() {
@@ -133,6 +140,18 @@
       }
     }
 
+    function shoot() {
+      if (ammo <= 0 || gameOver) return;
+      ammo--;
+      for (let i = height - 2; i >= 0; i--) {
+        if (grid[i][playerPos] === "Z") {
+          grid[i][playerPos] = " ";
+          break;
+        }
+      }
+      updatePlayerRow();
+    }
+
     function updatePlayerRow() {
       const bottom = Array(width).fill(" ");
       bottom[playerPos] = playerChar;
@@ -165,6 +184,7 @@
     document.addEventListener("keydown", function(e) {
       if (e.key === "ArrowLeft") moveLeft();
       else if (e.key === "ArrowRight") moveRight();
+      else if (e.key.toLowerCase() === "i") shoot();
     });
   </script>
 </body>
