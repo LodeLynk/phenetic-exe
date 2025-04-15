@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v7</title>
+  <title>ZDODGE.EXE v8</title>
   <style>
     html, body {
       margin: 0;
@@ -17,6 +17,7 @@
       height: 100%;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: space-between;
     }
     #screen {
@@ -24,13 +25,16 @@
       line-height: 1.2;
       flex-grow: 1;
       padding: 10px;
-      text-align: left;
+      text-align: center;
       overflow-y: hidden;
+      max-width: 100%;
     }
     .controls {
       display: flex;
       justify-content: space-around;
-      padding: 0 10px 8px 10px;
+      padding: 8px 10px 24px 10px; /* bottom lifted */
+      width: 100%;
+      max-width: 480px;
     }
     .controls button {
       background: #00FF00;
@@ -81,20 +85,17 @@
 
     function createRow(prevGap) {
       const row = Array(width).fill("Z");
-      const options = [prevGap];
-      if (prevGap > 0) options.push(prevGap - 1);
-      if (prevGap < width - 1) options.push(prevGap + 1);
-      const gap = options[Math.floor(Math.random() * options.length)];
-      row[gap] = " ";
-      // Carve secondary gap next to it for cornering
-      if (gap > 0 && Math.random() < 0.5) row[gap - 1] = " ";
-      else if (gap < width - 1 && Math.random() < 0.5) row[gap + 1] = " ";
-      // Add refill every 5 lines
+      const pathStart = Math.max(1, prevGap - 1);
+      const pathEnd = Math.min(width - 2, prevGap + 1);
+      for (let i = pathStart; i <= pathEnd; i++) {
+        row[i] = " ";
+      }
+      // Add refill
       if (frameCount % 5 === 0 && Math.random() < 0.7) {
         const rPos = Math.floor(Math.random() * width);
         if (row[rPos] === " ") row[rPos] = refillChar;
       }
-      return { row, gap };
+      return { row, gap: prevGap };
     }
 
     function dropRow() {
