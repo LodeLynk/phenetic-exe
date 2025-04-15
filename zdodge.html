@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v13</title>
+  <title>ZDODGE.EXE v12 (Fixed)</title>
   <style>
     html, body {
       margin: 0;
@@ -32,34 +32,18 @@
     .controls {
       display: flex;
       justify-content: space-between;
-      padding: 0 10px 16px 10px;
+      padding: 8px 10px 24px 10px;
       width: 100%;
       max-width: 480px;
-      flex-wrap: wrap;
     }
-    .fire {
+    .fire, .dpad {
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      width: 30%;
     }
-    .dpad {
-      display: grid;
-      grid-template-columns: 40px 40px 40px;
-      grid-template-rows: 40px 40px 40px;
-      gap: 2px;
+    .dpad-buttons {
+      display: flex;
       justify-content: center;
-      align-items: center;
-      width: 60%;
-    }
-    .dpad button {
-      width: 40px;
-      height: 40px;
-    }
-    .dpad button.center {
-      background: #004400;
-      pointer-events: none;
     }
     button {
       background: #00FF00;
@@ -70,6 +54,7 @@
       border: none;
       margin: 2px;
       cursor: pointer;
+      min-width: 40px;
     }
     button:active {
       background: #00cc00;
@@ -91,8 +76,6 @@
 </head>
 <body>
   <div id="screen"></div>
-  <div style="margin-top:-5px;"><button style="font-size:12px;" onclick="toggleMenu()">[ MENU ]</button></div>
-  <button onclick="toggleMenu()">[ MENU ]</button>
   <div id="menuOverlay">
     <p>[ SETTINGS ]</p>
     <button onclick="resumeGame()">> Resume</button>
@@ -102,15 +85,15 @@
   <div class="controls">
     <div class="fire">
       <button onclick="shoot()">I</button>
+      <button onclick="toggleMenu()">MENU</button>
     </div>
-    <div class="dpad" style="display: grid; grid-template-areas: 'up up up' 'left center right' 'down down down'; grid-template-columns: 40px 40px 40px; grid-template-rows: 40px 40px 40px; gap: 2px; justify-content: center; align-items: center;">
-      <button style="grid-area: up;" onclick="moveUp()">↑</button>
-      <button class="center" style="grid-area: center;"></button>
-      <button style="grid-area: right;" onclick="moveRight()">→</button>
-      <button style="grid-area: left;" onclick="moveLeft()">←</button>
-      <button class="center" style="grid-area: center;"></button>
-      <button style="grid-area: down;" onclick="moveDown()">↓</button>
-      <div></div><div></div><div></div>
+    <div class="dpad">
+      <button onclick="moveUp()">↑</button>
+      <div class="dpad-buttons">
+        <button onclick="moveLeft()">←</button>
+        <button onclick="moveDown()">↓</button>
+        <button onclick="moveRight()">→</button>
+      </div>
     </div>
   </div>
   <script>
@@ -147,7 +130,6 @@
       const direction = Math.random() < 0.5 ? -1 : 1;
       const nextX = Math.max(1, Math.min(width - 2, trailX + direction));
       const corner = nextX !== trailX;
-
       row[nextX] = " ";
       if (corner) {
         row[trailX] = " ";
@@ -155,20 +137,17 @@
           row[nextX + direction] = " ";
         }
       }
-
       const rChance = Math.min(0.3 + linesDropped / 150, 0.9);
       if (Math.random() < rChance) {
         const rPos = Math.floor(Math.random() * width);
         if (row[rPos] === " ") row[rPos] = refillChar;
       }
-
       trailX = nextX;
       return row;
     }
 
     function dropRow() {
       if (gameOver || gamePaused) return;
-
       linesDropped++;
 
       if (grid[playerY - 1][playerX] === "Z") {
@@ -189,7 +168,7 @@
         ammo += 3;
       }
 
-      // Clear old player position
+      // FIX: remove all A's before updating player position
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           if (grid[y][x] === playerChar) grid[y][x] = " ";
