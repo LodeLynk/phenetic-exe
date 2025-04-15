@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PHONETIC.EXE</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: #00FF00;
+      font-family: monospace;
+      padding: 20px;
+      font-size: 18px;
+      overflow-x: hidden;
+    }
+    #screen {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .cursor::after {
+      content: '_';
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="screen">PHONETIC CHECK v1.00
+SYSTEM READY
+</div>
+  <script>
+    const phonetics = {
+      A: "ALPHA", B: "BRAVO", C: "CHARLIE", D: "DELTA", E: "ECHO",
+      F: "FOXTROT", G: "GOLF", H: "HOTEL", I: "INDIA", J: "JULIETT",
+      K: "KILO", L: "LIMA", M: "MIKE", N: "NOVEMBER", O: "OSCAR",
+      P: "PAPA", Q: "QUEBEC", R: "ROMEO", S: "SIERRA", T: "TANGO",
+      U: "UNIFORM", V: "VICTOR", W: "WHISKEY", X: "X-RAY", Y: "YANKEE", Z: "ZULU"
+    };
+
+    let log = ["PHONETIC CHECK v1.00", "SYSTEM READY", ""];
+    let currentLetter = '';
+    let state = 'look'; // 'look', 'write', 'check'
+    let userInput = '';
+
+    document.addEventListener("keydown", function(e) {
+      const key = e.key.toUpperCase();
+
+      if (state === 'look' && phonetics[key]) {
+        currentLetter = key;
+        log.push(key + " → " + phonetics[key]);
+        render();
+
+        setTimeout(() => {
+          log.pop(); // remove phonetic line
+          log.push("TYPE PHONETIC FOR " + currentLetter + ":");
+          state = 'write';
+          render();
+        }, 1500);
+
+      } else if (state === 'write') {
+        if (key === "BACKSPACE") {
+          userInput = userInput.slice(0, -1);
+        } else if (key.length === 1 && key.match(/[A-Z\- ]/)) {
+          userInput += key;
+        } else if (key === "ENTER") {
+          log.push("TYPE PHONETIC FOR " + currentLetter + ": " + userInput);
+          setTimeout(() => {
+            log.push(currentLetter + " → " + phonetics[currentLetter]);
+            userInput = '';
+            currentLetter = '';
+            state = 'look';
+            render();
+          }, 1000);
+        }
+        render();
+      }
+    });
+
+    function render() {
+      let displayLog = log.slice();
+      if (state === 'write') {
+        displayLog[displayLog.length - 1] = "TYPE PHONETIC FOR " + currentLetter + ": " + userInput;
+      }
+      document.getElementById("screen").textContent = displayLog.join("\n") + "\n_";
+    }
+
+    render();
+  </script>
+</body>
+</html>
