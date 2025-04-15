@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE</title>
+  <title>ZDODGE.EXE v6</title>
   <style>
     html, body {
       margin: 0;
@@ -28,8 +28,6 @@
       overflow-y: hidden;
     }
     .controls {
-      display: none;
-      flex-shrink: 0;
       display: flex;
       justify-content: space-around;
       padding: 5px 10px 15px 10px;
@@ -48,144 +46,139 @@
     .controls button:active {
       background: #00cc00;
     }
-    .cursor {
-      display: inline-block;
-      width: 10px;
-      animation: blink 1s step-start infinite;
-    }
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
   </style>
 </head>
 <body>
   <div id="screen"></div>
-  <div class="controls" id="controls">
+  <div class="controls">
     <button onclick="moveLeft()">◀</button>
     <button onclick="shoot()">I</button>
     <button onclick="moveRight()">▶</button>
   </div>
   <script>
     const screen = document.getElementById("screen");
-    const controls = document.getElementById("controls");
     const width = 15;
-    const height = 14;
+    const height = 18;
     let interval = 1000;
     const playerChar = "A";
-    let playerPos = Math.floor(width / 2);
-    let gapPos = playerPos;
+    const refillChar = "R";
+
     let grid = [];
+    let playerX = Math.floor(width / 2);
+    let playerY = height - 1;
     let gameOver = false;
     let gameInterval;
     let ammo = 3;
+    let frameCount = 0;
 
-    function createNavigableRow(prevGap) {
+    function initGrid() {
+      grid = [];
+      for (let i = 0; i < height; i++) {
+        grid.push(Array(width).fill(" "));
+      }
+      grid[playerY][playerX] = playerChar;
+    }
+
+    function createRow(prevGap) {
       const row = Array(width).fill("Z");
       const options = [prevGap];
       if (prevGap > 0) options.push(prevGap - 1);
       if (prevGap < width - 1) options.push(prevGap + 1);
-      const newGap = options[Math.floor(Math.random() * options.length)];
-      row[newGap] = " ";
-      return { row, newGap };
-    }
-
-    function initGrid() {
-      grid = [];
-      for (let i = 0; i < height - 1; i++) {
-        const { row, newGap } = createNavigableRow(gapPos);
-        grid.push(row);
-        gapPos = newGap;
+      const gap = options[Math.floor(Math.random() * options.length)];
+      row[gap] = " ";
+      // Spawn R every 5 lines
+      if (frameCount % 5 === 0 && Math.random() < 0.7) {
+        const rPos = Math.floor(Math.random() * width);
+        if (row[rPos] === " ") row[rPos] = refillChar;
       }
-      const bottom = Array(width).fill(" ");
-      grid.push(bottom);
+      return { row, gap };
     }
 
-    function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n") + `\n\nAMMO: ${ammo}`;
-    }
-
-    function updateGrid() {
+    function dropRow() {
       if (gameOver) return;
 
-      if (grid[height - 2][playerPos] === "Z") {
+      frameCount++;
+
+      // Check if player is hit
+      if (grid[playerY - 1][playerX] === "Z") {
+        grid[playerY][playerX] = "X";
         gameOver = true;
         screen.innerText = renderGrid() + "\n\nYOU GOT SQUISHED. GAME OVER.";
         return;
       }
 
-      const { row: newRow, newGap } = createNavigableRow(gapPos);
-      gapPos = newGap;
-      grid.shift();
-      grid.splice(height - 2, 1, newRow);
-      const bottom = Array(width).fill(" ");
-      bottom[playerPos] = playerChar;
-      grid[height - 1] = bottom;
+      // Move all rows down
+      for (let i = height - 1; i > 0; i--) {
+        grid[i] = [...grid[i - 1]];
+      }
+
+      // Add new row at top
+      const prevGap = grid[1].indexOf(" ") !== -1 ? grid[1].indexOf(" ") : Math.floor(Math.random() * width);
+      const { row: newRow } = createRow(prevGap);
+      grid[0] = newRow;
+
+      // Handle R collection
+      if (grid[playerY][playerX] === refillChar) {
+        ammo = Math.min(ammo + 3, 9);
+      }
+
+      // Place player
+      for (let x = 0; x < width; x++) {
+        if (grid[playerY][x] === playerChar) grid[playerY][x] = " ";
+      }
+      grid[playerY][playerX] = playerChar;
+
       screen.innerText = renderGrid();
-      interval = Math.max(300, interval - 10);
+      interval = Math.max(300, interval - 5);
       clearInterval(gameInterval);
-      gameInterval = setInterval(updateGrid, interval);
+      gameInterval = setInterval(dropRow, interval);
     }
 
     function moveLeft() {
-      if (playerPos > 0) {
-        playerPos--;
-        updatePlayerRow();
+      if (gameOver) return;
+      if (playerX > 0 && grid[playerY][playerX - 1] !== "Z") {
+        grid[playerY][playerX] = " ";
+        playerX--;
+        grid[playerY][playerX] = playerChar;
+        screen.innerText = renderGrid();
       }
     }
 
     function moveRight() {
-      if (playerPos < width - 1) {
-        playerPos++;
-        updatePlayerRow();
+      if (gameOver) return;
+      if (playerX < width - 1 && grid[playerY][playerX + 1] !== "Z") {
+        grid[playerY][playerX] = " ";
+        playerX++;
+        grid[playerY][playerX] = playerChar;
+        screen.innerText = renderGrid();
       }
     }
 
     function shoot() {
       if (ammo <= 0 || gameOver) return;
       ammo--;
-      for (let i = height - 2; i >= 0; i--) {
-        if (grid[i][playerPos] === "Z") {
-          grid[i][playerPos] = " ";
+      for (let y = playerY - 1; y >= 0; y--) {
+        if (grid[y][playerX] === "Z") {
+          grid[y][playerX] = " ";
           break;
         }
       }
-      updatePlayerRow();
-    }
-
-    function updatePlayerRow() {
-      const bottom = Array(width).fill(" ");
-      bottom[playerPos] = playerChar;
-      grid[height - 1] = bottom;
       screen.innerText = renderGrid();
     }
 
-    // Cinematic boot
-    function startCinematic() {
-      screen.innerHTML = "<span class='cursor'>_</span><br>";
-      setTimeout(() => {
-        screen.innerHTML = "A<span class='cursor'>_</span><br>";
-      }, 500);
-      setTimeout(() => {
-        screen.innerHTML = ("\n".repeat(height - 2) + "\n" + " ".repeat(playerPos * 2) + "A<br>");
-        controls.style.display = "flex";
-        initGrid();
-        const bottom = Array(width).fill(" ");
-        bottom[playerPos] = playerChar;
-        grid[height - 1] = bottom;
-
-        setTimeout(() => {
-          screen.innerText = renderGrid();
-          gameInterval = setInterval(updateGrid, interval);
-        }, 1000);
-      }, 2000);
+    function renderGrid() {
+      return grid.map(row => row.join(" ")).join("\n") + `\n\nAMMO: ${ammo}`;
     }
 
-    document.addEventListener("DOMContentLoaded", startCinematic);
     document.addEventListener("keydown", function(e) {
       if (e.key === "ArrowLeft") moveLeft();
       else if (e.key === "ArrowRight") moveRight();
       else if (e.key.toLowerCase() === "i") shoot();
     });
+
+    initGrid();
+    screen.innerText = renderGrid();
+    gameInterval = setInterval(dropRow, interval);
   </script>
 </body>
 </html>
