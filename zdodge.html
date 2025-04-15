@@ -65,6 +65,7 @@
     const height = 14;
     let interval = 1000;
     const playerChar = "A";
+
     let playerPos = Math.floor(width / 2);
     let gapPos = playerPos;
     let grid = [];
@@ -141,18 +142,22 @@
 
     // Cinematic boot
     function startCinematic() {
-      screen.innerText = "█" + "\n";
+      screen.innerHTML = "<span class='cursor'>_</span><br>";
       setTimeout(() => {
-        screen.innerText = "A<span class='cursor'>_</span>\n";
+        screen.innerHTML = "A<span class='cursor'>_</span><br>";
       }, 500);
       setTimeout(() => {
-        screen.innerText = "\n".repeat(height - 2) + "\n" + " ".repeat(playerPos * 2) + "A" + "\n";
+        screen.innerHTML = ("\n".repeat(height - 2) + "\n" + " ".repeat(playerPos * 2) + "A<br>");
         controls.style.display = "flex";
         initGrid();
         const bottom = Array(width).fill(" ");
         bottom[playerPos] = playerChar;
         grid[height - 1] = bottom;
-        gameInterval = setInterval(updateGrid, interval);
+
+        setTimeout(() => {
+          screen.innerText = renderGrid();
+          gameInterval = setInterval(updateGrid, interval);
+        }, 1000);
       }, 2000);
     }
 
