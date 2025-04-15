@@ -1,3 +1,298 @@
-<!DOCTYPE html>
 
-<!-- user-provided HTML omitted for brevity as it's already in memory -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZDODGE.EXE v13</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: #00FF00;
+      font-family: monospace;
+      font-size: 18px;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #screen {
+      white-space: pre;
+      line-height: 1.2;
+      flex-grow: 1;
+      padding: 10px;
+      text-align: center;
+      overflow-y: hidden;
+      max-width: 100%;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 10px 16px 10px;
+      width: 100%;
+      max-width: 480px;
+      flex-wrap: wrap;
+    }
+    .fire {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 30%;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: 40px 40px 40px;
+      grid-template-rows: 40px 40px 40px;
+      gap: 2px;
+      justify-content: center;
+      align-items: center;
+      width: 60%;
+    }
+    .dpad button {
+      width: 40px;
+      height: 40px;
+    }
+    .dpad button.center {
+      background: #004400;
+      pointer-events: none;
+    }
+    button {
+      background: #00FF00;
+      color: black;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 8px 12px;
+      border: none;
+      margin: 2px;
+      cursor: pointer;
+    }
+    button:active {
+      background: #00cc00;
+    }
+    #menuOverlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: black;
+      color: #00FF00;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: monospace;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="screen"></div>
+  <div style="margin-top:-5px;"><button style="font-size:12px;" onclick="toggleMenu()">[ MENU ]</button></div>
+  <button onclick="toggleMenu()">[ MENU ]</button>
+  <div id="menuOverlay">
+    <p>[ SETTINGS ]</p>
+    <button onclick="resumeGame()">> Resume</button>
+    <button onclick="toggleSpeedCap()">> Toggle Speed Cap: <span id="speedCapStatus">ON</span></button>
+    <button onclick="closeGame()">> Exit Game</button>
+  </div>
+  <div class="controls">
+    <div class="fire">
+      <button onclick="shoot()">I</button>
+    </div>
+    <div class="dpad" style="display: grid; grid-template-areas: 'up up up' 'left center right' 'down down down'; grid-template-columns: 40px 40px 40px; grid-template-rows: 40px 40px 40px; gap: 2px; justify-content: center; align-items: center;">
+      <button style="grid-area: up;" onclick="moveUp()">↑</button>
+      <button class="center" style="grid-area: center;"></button>
+      <button style="grid-area: right;" onclick="moveRight()">→</button>
+      <button style="grid-area: left;" onclick="moveLeft()">←</button>
+      <button class="center" style="grid-area: center;"></button>
+      <button style="grid-area: down;" onclick="moveDown()">↓</button>
+      <div></div><div></div><div></div>
+    </div>
+  </div>
+  <script>
+    const screen = document.getElementById("screen");
+    const menuOverlay = document.getElementById("menuOverlay");
+    const speedCapStatus = document.getElementById("speedCapStatus");
+    const width = 15;
+    const height = 22;
+    let interval = 1200;
+    const playerChar = "A";
+    const refillChar = "R";
+    let speedCap = true;
+
+    let grid = [];
+    let playerX = Math.floor(width / 2);
+    let playerY = height - 4;
+    let gameOver = false;
+    let gameInterval;
+    let ammo = 3;
+    let linesDropped = 0;
+    let trailX = playerX;
+    let gamePaused = false;
+
+    function initGrid() {
+      grid = [];
+      for (let i = 0; i < height; i++) {
+        grid.push(Array(width).fill(" "));
+      }
+      grid[playerY][playerX] = playerChar;
+    }
+
+    function createWavyRow() {
+      const row = Array(width).fill("Z");
+      const direction = Math.random() < 0.5 ? -1 : 1;
+      const nextX = Math.max(1, Math.min(width - 2, trailX + direction));
+      const corner = nextX !== trailX;
+
+      row[nextX] = " ";
+      if (corner) {
+        row[trailX] = " ";
+        if (nextX + direction < width - 1 && nextX + direction > 0) {
+          row[nextX + direction] = " ";
+        }
+      }
+
+      const rChance = Math.min(0.3 + linesDropped / 150, 0.9);
+      if (Math.random() < rChance) {
+        const rPos = Math.floor(Math.random() * width);
+        if (row[rPos] === " ") row[rPos] = refillChar;
+      }
+
+      trailX = nextX;
+      return row;
+    }
+
+    function dropRow() {
+      if (gameOver || gamePaused) return;
+
+      linesDropped++;
+
+      if (grid[playerY - 1][playerX] === "Z") {
+        grid[playerY][playerX] = "X";
+        gameOver = true;
+        screen.innerText = renderGrid() + "\nYOU GOT SQUISHED. GAME OVER.";
+        return;
+      }
+
+      for (let i = height - 1; i > 0; i--) {
+        grid[i] = [...grid[i - 1]];
+      }
+
+      const newRow = createWavyRow();
+      grid[0] = newRow;
+
+      if (grid[playerY][playerX] === refillChar) {
+        ammo += 3;
+      }
+
+      // Clear old player position
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (grid[y][x] === playerChar) grid[y][x] = " ";
+        }
+      }
+
+      grid[playerY][playerX] = playerChar;
+      screen.innerText = renderGrid();
+
+      interval = speedCap ? Math.max(250, 1200 - linesDropped * 10) : Math.max(80, 1200 - linesDropped * 10);
+      clearInterval(gameInterval);
+      gameInterval = setInterval(dropRow, interval);
+    }
+
+    function renderGrid() {
+      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo;
+    }
+
+    function moveLeft() {
+      if (gameOver || gamePaused) return;
+      if (playerX > 0 && grid[playerY][playerX - 1] !== "Z") {
+        grid[playerY][playerX] = " ";
+        playerX--;
+        grid[playerY][playerX] = playerChar;
+        screen.innerText = renderGrid();
+      }
+    }
+
+    function moveRight() {
+      if (gameOver || gamePaused) return;
+      if (playerX < width - 1 && grid[playerY][playerX + 1] !== "Z") {
+        grid[playerY][playerX] = " ";
+        playerX++;
+        grid[playerY][playerX] = playerChar;
+        screen.innerText = renderGrid();
+      }
+    }
+
+    function moveUp() {
+      if (gameOver || gamePaused) return;
+      if (playerY > height - 7 && grid[playerY - 1][playerX] !== "Z") {
+        grid[playerY][playerX] = " ";
+        playerY--;
+        grid[playerY][playerX] = playerChar;
+        screen.innerText = renderGrid();
+      }
+    }
+
+    function moveDown() {
+      if (gameOver || gamePaused) return;
+      if (playerY < height - 1 && grid[playerY + 1][playerX] !== "Z") {
+        grid[playerY][playerX] = " ";
+        playerY++;
+        grid[playerY][playerX] = playerChar;
+        screen.innerText = renderGrid();
+      }
+    }
+
+    function shoot() {
+      if (ammo <= 0 || gameOver || gamePaused) return;
+      ammo--;
+      for (let y = playerY - 1; y >= 0; y--) {
+        if (grid[y][playerX] === "Z") {
+          grid[y][playerX] = " ";
+          break;
+        }
+      }
+      screen.innerText = renderGrid();
+    }
+
+    function toggleMenu() {
+      gamePaused = !gamePaused;
+      menuOverlay.style.display = gamePaused ? "flex" : "none";
+    }
+
+    function toggleSpeedCap() {
+      speedCap = !speedCap;
+      speedCapStatus.textContent = speedCap ? "ON" : "OFF";
+    }
+
+    function resumeGame() {
+      toggleMenu();
+    }
+
+    function closeGame() {
+      location.reload();
+    }
+
+    function startGame() {
+      initGrid();
+      screen.innerText = renderGrid();
+      gameInterval = setInterval(dropRow, interval);
+    }
+
+    document.addEventListener("DOMContentLoaded", startGame);
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowLeft") moveLeft();
+      else if (e.key === "ArrowRight") moveRight();
+      else if (e.key === "ArrowUp") moveUp();
+      else if (e.key === "ArrowDown") moveDown();
+      else if (e.key.toLowerCase() === "i" || e.key === " ") shoot();
+      else if (e.key.toLowerCase() === "m") toggleMenu();
+    });
+  </script>
+</body>
+</html>
