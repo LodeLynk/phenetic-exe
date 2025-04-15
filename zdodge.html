@@ -13,18 +13,37 @@
       font-family: monospace;
       padding: 20px;
       font-size: 18px;
+      text-align: center;
     }
     #screen {
       white-space: pre;
       line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .controls button {
+      background: #00FF00;
+      color: black;
+      font-family: monospace;
+      font-size: 18px;
+      padding: 10px 20px;
+      margin: 0 10px;
+      border: none;
+      cursor: pointer;
+    }
+    .controls button:active {
+      background: #00cc00;
     }
   </style>
 </head>
 <body>
   <div id="screen"></div>
+  <div class="controls">
+    <button onclick="moveLeft()">◀ LEFT</button>
+    <button onclick="moveRight()">RIGHT ▶</button>
+  </div>
   <script>
     const screen = document.getElementById("screen");
-    const width = 9;
+    const width = 15;
     const height = 12;
     const interval = 1000;
     const playerChar = "A";
@@ -40,29 +59,33 @@
     }
 
     function initGrid() {
-      for (let i = 0; i < height - 1; i++) {
-        grid.push(createRow());
+      grid = [];
+      for (let i = 0; i < height - 3; i++) {
+        grid.push(Array(width).fill(" "));
       }
+      grid.push(Array(width).fill(" "));
+      grid.push(Array(width).fill(" "));
       const bottom = Array(width).fill(" ");
       bottom[playerPos] = playerChar;
       grid.push(bottom);
     }
 
     function updateGrid() {
+      if (gameOver) return;
+
       // Check if player got squished
       if (grid[height - 2][playerPos] === "Z") {
-        clearInterval(gameInterval);
-        screen.innerText = renderGrid();
-        screen.innerText += "\n\nYOU GOT SQUISHED. GAME OVER.";
+        gameOver = true;
+        screen.innerText = renderGrid() + "\n\nYOU GOT SQUISHED. GAME OVER.";
         return;
       }
 
       const newRow = createRow();
       grid.shift(); // Remove top
-      grid.push(newRow); // Push row above player
-      const lastRow = Array(width).fill(" ");
-      lastRow[playerPos] = playerChar;
-      grid[height - 1] = lastRow;
+      grid.splice(height - 2, 1, newRow); // Row above player
+      const bottom = Array(width).fill(" ");
+      bottom[playerPos] = playerChar;
+      grid[height - 1] = bottom;
 
       screen.innerText = renderGrid();
     }
@@ -71,18 +94,33 @@
       return grid.map(row => row.join(" ")).join("\n");
     }
 
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "ArrowLeft" && playerPos > 0) {
+    function moveLeft() {
+      if (playerPos > 0) {
         playerPos--;
-      } else if (e.key === "ArrowRight" && playerPos < width - 1) {
-        playerPos++;
+        updatePlayerRow();
       }
+    }
+
+    function moveRight() {
+      if (playerPos < width - 1) {
+        playerPos++;
+        updatePlayerRow();
+      }
+    }
+
+    function updatePlayerRow() {
       const bottom = Array(width).fill(" ");
       bottom[playerPos] = playerChar;
       grid[height - 1] = bottom;
       screen.innerText = renderGrid();
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowLeft") moveLeft();
+      else if (e.key === "ArrowRight") moveRight();
     });
 
+    let gameOver = false;
     initGrid();
     screen.innerText = renderGrid();
     const gameInterval = setInterval(updateGrid, interval);
