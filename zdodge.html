@@ -32,7 +32,7 @@
     .controls {
       display: flex;
       justify-content: space-between;
-      padding: 8px 10px 24px 10px;
+      padding: 4px 10px 16px 10px;
       width: 100%;
       max-width: 480px;
     }
@@ -76,6 +76,9 @@
 </head>
 <body>
   <div id="screen"></div>
+  <div style="width:100%; text-align:center; margin-top:-5px;">
+    <button style="font-size:12px;" onclick="toggleMenu()">[ MENU ]</button>
+  </div>
   <div id="menuOverlay">
     <p>[ SETTINGS ]</p>
     <button onclick="resumeGame()">> Resume</button>
@@ -87,14 +90,15 @@
       <button onclick="shoot()">I</button>
       <button onclick="toggleMenu()">MENU</button>
     </div>
-    <div class="dpad">
-      <button onclick="moveUp()">↑</button>
-      <div class="dpad-buttons">
-        <button onclick="moveLeft()">←</button>
-        <button onclick="moveDown()">↓</button>
-        <button onclick="moveRight()">→</button>
-      </div>
-    </div>
+    
+<div class="dpad" style="display: grid; grid-template-areas: 'up' 'left center right' 'down'; grid-template-columns: auto auto auto; grid-template-rows: auto auto auto; justify-content: center; align-items: center;">
+  <button style="grid-area: up;" onclick="moveUp()">↑</button>
+  <button style="grid-area: left;" onclick="moveLeft()">←</button>
+  <button class="center" style="grid-area: center; pointer-events: none; background: #004400;">+</button>
+  <button style="grid-area: right;" onclick="moveRight()">→</button>
+  <button style="grid-area: down;" onclick="moveDown()">↓</button>
+</div>
+
   </div>
   <script>
     const screen = document.getElementById("screen");
