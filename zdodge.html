@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v9</title>
+  <title>ZDODGE.EXE v10</title>
   <style>
     html, body {
       margin: 0;
@@ -63,8 +63,7 @@
     const screen = document.getElementById("screen");
     const width = 15;
     const height = 22;
-    let baseInterval = 1000;
-    let interval = baseInterval;
+    let interval = 1200;
     const playerChar = "A";
     const refillChar = "R";
 
@@ -74,38 +73,51 @@
     let gameOver = false;
     let gameInterval;
     let ammo = 3;
-    let frameCount = 0;
     let linesDropped = 0;
+
+    let trailX = playerX; // current path x
 
     function initGrid() {
       grid = [];
       for (let i = 0; i < height; i++) {
-        grid.push(Array(width).fill(" "));
+        grid.push(Array(width).fill("Z"));
       }
       grid[playerY][playerX] = playerChar;
     }
 
-    function createRow(prevGap) {
+    function createWavyRow() {
       const row = Array(width).fill("Z");
-      const newGap = Math.max(1, Math.min(width - 2, prevGap + (Math.random() < 0.5 ? -1 : 1)));
-      row[newGap - 1] = " ";
-      row[newGap] = " ";
-      row[newGap + 1] = " ";
 
-      // Dynamic ammo chance
-      const ammoChance = Math.min(0.3 + linesDropped / 200, 0.8);
-      if (Math.random() < ammoChance) {
+      // Random shift left/right
+      const direction = Math.random() < 0.5 ? -1 : 1;
+      const nextX = Math.max(1, Math.min(width - 2, trailX + direction));
+      const corner = nextX !== trailX;
+
+      // Apply 6-tile arc clear
+      row[nextX] = " ";
+      if (corner) {
+        row[trailX] = " "; // side step
+        if (Math.random() < 0.7) {
+          if (nextX + direction < width - 1 && nextX + direction > 0) {
+            row[nextX + direction] = " "; // clear above-right or left
+          }
+        }
+      }
+
+      // R spawn chance
+      const rChance = Math.min(0.3 + linesDropped / 150, 0.9);
+      if (Math.random() < rChance) {
         const rPos = Math.floor(Math.random() * width);
         if (row[rPos] === " ") row[rPos] = refillChar;
       }
 
-      return { row, gap: newGap };
+      trailX = nextX;
+      return row;
     }
 
     function dropRow() {
       if (gameOver) return;
 
-      frameCount++;
       linesDropped++;
 
       // Check hit
@@ -116,13 +128,11 @@
         return;
       }
 
-      // Drop rows
       for (let i = height - 1; i > 0; i--) {
         grid[i] = [...grid[i - 1]];
       }
 
-      const prevGap = grid[1].findIndex(cell => cell === " ");
-      const { row: newRow } = createRow(prevGap >= 0 ? prevGap : Math.floor(Math.random() * width));
+      const newRow = createWavyRow();
       grid[0] = newRow;
 
       if (grid[playerY][playerX] === refillChar) {
@@ -136,14 +146,8 @@
 
       screen.innerText = renderGrid();
 
-      // Tetris-style speed levels
-      if (linesDropped < 20) interval = 1000;
-      else if (linesDropped < 40) interval = 800;
-      else if (linesDropped < 60) interval = 600;
-      else if (linesDropped < 80) interval = 500;
-      else if (linesDropped < 100) interval = 400;
-      else interval = 300;
-
+      // Speed increase over time — no cap
+      interval = Math.max(80, 1200 - linesDropped * 10);
       clearInterval(gameInterval);
       gameInterval = setInterval(dropRow, interval);
     }
