@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DODGE.EXE</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: #00FF00;
+      font-family: monospace;
+      padding: 20px;
+      font-size: 18px;
+    }
+    #screen {
+      white-space: pre;
+      line-height: 1.2;
+    }
+  </style>
+</head>
+<body>
+  <div id="screen"></div>
+  <script>
+    const screen = document.getElementById("screen");
+    const width = 9;
+    const height = 12;
+    const interval = 1000;
+    const playerChar = "A";
+
+    let playerPos = Math.floor(width / 2);
+    let grid = [];
+
+    function createRow() {
+      const row = Array(width).fill("Z");
+      const gap = Math.floor(Math.random() * width);
+      row[gap] = " ";
+      return row;
+    }
+
+    function initGrid() {
+      for (let i = 0; i < height - 1; i++) {
+        grid.push(createRow());
+      }
+      const bottom = Array(width).fill(" ");
+      bottom[playerPos] = playerChar;
+      grid.push(bottom);
+    }
+
+    function updateGrid() {
+      const newRow = createRow();
+      grid.shift(); // Remove top
+      const lastRow = Array(width).fill(" ");
+      lastRow[playerPos] = playerChar;
+      grid.push(lastRow);
+
+      // Check if player got squished
+      if (grid[height - 2][playerPos] === "Z") {
+        clearInterval(gameInterval);
+        screen.innerText = renderGrid();
+        screen.innerText += "\n\nYOU GOT SQUISHED. GAME OVER.";
+        return;
+      }
+
+      screen.innerText = renderGrid();
+    }
+
+    function renderGrid() {
+      return grid.map(row => row.map(c => `[${c}]`).join(" ")).join("\n");
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowLeft" && playerPos > 0) {
+        playerPos--;
+      } else if (e.key === "ArrowRight" && playerPos < width - 1) {
+        playerPos++;
+      }
+      const bottom = Array(width).fill(" ");
+      bottom[playerPos] = playerChar;
+      grid[height - 1] = bottom;
+      screen.innerText = renderGrid();
+    });
+
+    initGrid();
+    screen.innerText = renderGrid();
+    const gameInterval = setInterval(updateGrid, interval);
+  </script>
+</body>
+</html>
