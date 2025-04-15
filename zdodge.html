@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DODGE.EXE</title>
+  <title>ZDODGE.EXE</title>
   <style>
     body {
       margin: 0;
@@ -49,12 +49,6 @@
     }
 
     function updateGrid() {
-      const newRow = createRow();
-      grid.shift(); // Remove top
-      const lastRow = Array(width).fill(" ");
-      lastRow[playerPos] = playerChar;
-      grid.push(lastRow);
-
       // Check if player got squished
       if (grid[height - 2][playerPos] === "Z") {
         clearInterval(gameInterval);
@@ -63,11 +57,18 @@
         return;
       }
 
+      const newRow = createRow();
+      grid.shift(); // Remove top
+      grid.push(newRow); // Push row above player
+      const lastRow = Array(width).fill(" ");
+      lastRow[playerPos] = playerChar;
+      grid[height - 1] = lastRow;
+
       screen.innerText = renderGrid();
     }
 
     function renderGrid() {
-      return grid.map(row => row.map(c => `[${c}]`).join(" ")).join("\n");
+      return grid.map(row => row.join(" ")).join("\n");
     }
 
     document.addEventListener("keydown", function(e) {
