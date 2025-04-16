@@ -14,6 +14,7 @@
       height: 100%;
       margin: 0;
       padding: 0;
+      overflow: hidden;
     }
     .container {
       display: flex;
@@ -28,14 +29,18 @@
       justify-content: center;
       margin-bottom: 14px;
       flex-wrap: wrap;
+      max-width: 100%;
+      overflow-x: hidden;
+      flex-shrink: 1;
     }
     .cell {
-      width: 22px;
+      width: 5vw;
+      max-width: 22px;
       height: 36px;
       margin: 1px;
       border: 1px solid #00FF00;
-      display: inline-block;
       background-color: black;
+      flex-shrink: 0;
     }
     .filled {
       background-color: #00FF00;
@@ -88,7 +93,7 @@ let barState = new Array(cells).fill(2);
 let pressesRequired = randomPresses();
 let pressCount = 0;
 let interval;
-let pressure = 100;
+let pressure = 76;
 let gameOver = false;
 
 function drawBar() {
@@ -171,7 +176,7 @@ function reboot() {
     barState = new Array(cells).fill(2);
     pressesRequired = randomPresses();
     pressCount = 0;
-    pressure = 100;
+    pressure = 76;
     gameOver = false;
     message.innerText = "PRESS SPACEBAR TO CONTINUE";
     drawBar();
