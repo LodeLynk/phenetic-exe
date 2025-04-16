@@ -23,23 +23,24 @@
       align-items: center;
       height: 100%;
       padding-top: 140px;
+      box-sizing: border-box;
     }
     .bar {
       display: flex;
       justify-content: center;
       margin-bottom: 14px;
       flex-wrap: wrap;
-      max-width: 100%;
+      width: 95vw;
+      max-width: 95vw;
       overflow-x: hidden;
-      flex-shrink: 1;
     }
     .cell {
-      width: 5vw;
-      max-width: 22px;
+      width: calc(95vw / 22);
       height: 36px;
       margin: 1px;
       border: 1px solid #00FF00;
       background-color: black;
+      box-sizing: border-box;
       flex-shrink: 0;
     }
     .filled {
@@ -78,7 +79,7 @@
 <div class="container">
   <input id="mobileInput" type="text" autofocus />
   <div class="bar" id="bar"></div>
-  <div class="percent" id="percent">99%</div>
+  <div class="percent" id="percent">76%</div>
   <div class="message" id="message">PRESS SPACEBAR TO CONTINUE</div>
 </div>
 
@@ -89,12 +90,25 @@ const message = document.getElementById("message");
 const mobileInput = document.getElementById("mobileInput");
 
 let cells = 20;
-let barState = new Array(cells).fill(2);
+let pressure = 76;
+let barState = [];
+
 let pressesRequired = randomPresses();
 let pressCount = 0;
 let interval;
-let pressure = 76;
 let gameOver = false;
+
+function initBarFromPressure() {
+  const fullCells = Math.floor(pressure / 5);
+  const hasHalf = pressure % 5 >= 2.5;
+
+  barState = [];
+  for (let i = 0; i < cells; i++) {
+    if (i < fullCells) barState.push(2);
+    else if (i === fullCells && hasHalf) barState.push(1);
+    else barState.push(0);
+  }
+}
 
 function drawBar() {
   bar.innerHTML = "";
@@ -107,7 +121,7 @@ function drawBar() {
   });
 
   let perc = Math.floor(pressure);
-  percentDisplay.innerText = (perc > 99 ? 99 : perc) + "%";
+  percentDisplay.innerText = perc + "%";
 
   if (pressure <= 25 && !gameOver) {
     percentDisplay.classList.add("critical");
@@ -128,6 +142,7 @@ function dropCell() {
       break;
     }
   }
+
   if (pressure <= 0) {
     pressure = 0;
     clearInterval(interval);
@@ -135,6 +150,7 @@ function dropCell() {
     gameOver = true;
     setTimeout(reboot, 3000);
   }
+
   drawBar();
 }
 
@@ -150,6 +166,7 @@ function raiseCell() {
       break;
     }
   }
+
   if (pressure > 99) pressure = 99;
   drawBar();
 }
@@ -173,10 +190,10 @@ function handleKey(e) {
 function reboot() {
   message.innerText = ">>> SYSTEM REBOOTING...";
   setTimeout(() => {
-    barState = new Array(cells).fill(2);
+    pressure = 76;
+    initBarFromPressure();
     pressesRequired = randomPresses();
     pressCount = 0;
-    pressure = 76;
     gameOver = false;
     message.innerText = "PRESS SPACEBAR TO CONTINUE";
     drawBar();
@@ -185,6 +202,7 @@ function reboot() {
 }
 
 function start() {
+  initBarFromPressure();
   drawBar();
   interval = setInterval(() => {
     dropCell();
