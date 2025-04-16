@@ -11,17 +11,17 @@
       font-family: monospace;
       font-size: 16px;
       text-align: center;
-      padding-top: 100px;
+      padding: 120px 20px 40px 20px;
     }
     .bar {
       display: flex;
       justify-content: center;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
     .cell {
-      width: 14px;
-      height: 30px;
+      width: 18px;
+      height: 32px;
       margin: 1px;
       border: 1px solid #00FF00;
       display: inline-block;
@@ -34,12 +34,12 @@
       background: linear-gradient(to right, #00FF00 50%, black 50%);
     }
     .percent {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .message {
-      margin-top: 4px;
+      margin-top: 6px;
       font-size: 14px;
     }
     .critical {
@@ -49,10 +49,10 @@
       50% { opacity: 0; }
     }
 
-    input {
+    #mobileInput {
       opacity: 0;
-      height: 0;
       position: absolute;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -87,7 +87,7 @@ function drawBar() {
   });
 
   let perc = Math.floor(pressure);
-  percentDisplay.innerText = (perc < 10 ? "." : "") + (perc > 99 ? 99 : perc) + "%";
+  percentDisplay.innerText = (perc > 99 ? 99 : perc) + "%";
 
   if (pressure <= 25 && !gameOver) {
     percentDisplay.classList.add("critical");
@@ -135,10 +135,10 @@ function raiseCell() {
 }
 
 function randomPresses() {
-  return Math.floor(Math.random() * 4) + 3; // 3–6
+  return Math.floor(Math.random() * 4) + 3;
 }
 
-document.addEventListener("keydown", function(e) {
+function handleKey(e) {
   if (gameOver) return;
   if (e.key === " ") {
     pressCount++;
@@ -148,7 +148,7 @@ document.addEventListener("keydown", function(e) {
       pressCount = 0;
     }
   }
-});
+}
 
 function reboot() {
   message.innerText = ">>> SYSTEM REBOOTING...";
@@ -171,6 +171,12 @@ function start() {
   }, 2000);
   mobileInput.focus();
 }
+
+document.addEventListener("keydown", handleKey);
+mobileInput.addEventListener("input", (e) => {
+  if (e.data === " ") handleKey({ key: " " });
+  mobileInput.value = "";
+});
 
 start();
 </script>
