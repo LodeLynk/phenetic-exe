@@ -1,301 +1,169 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ZDODGE.EXE v12 (Fixed)</title>
+  <meta charset="UTF-8">
+  <title>BRUTE.EXE</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
+    body {
       background: black;
       color: #00FF00;
-      font-family: monospace;
-      font-size: 18px;
-      overflow: hidden;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-    }
-    #screen {
-      white-space: pre;
-      line-height: 1.2;
-      flex-grow: 1;
-      padding: 10px;
-      text-align: center;
-      overflow-y: hidden;
-      max-width: 100%;
-    }
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 10px 24px 10px;
-      width: 100%;
-      max-width: 480px;
-    }
-    .fire, .dpad {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .dpad-buttons {
-      display: flex;
-      justify-content: center;
-    }
-    button {
-      background: #00FF00;
-      color: black;
-      font-family: monospace;
-      font-size: 14px;
-      padding: 8px 12px;
-      border: none;
-      margin: 2px;
-      cursor: pointer;
-      min-width: 40px;
-    }
-    button:active {
-      background: #00cc00;
-    }
-    #menuOverlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: black;
-      color: #00FF00;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
       font-family: monospace;
       font-size: 16px;
+      text-align: center;
+      padding-top: 30px;
+    }
+    .bar {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .cell {
+      width: 14px;
+      height: 30px;
+      margin: 1px;
+      border: 1px solid #00FF00;
+      display: inline-block;
+      background-color: black;
+    }
+    .filled {
+      background-color: #00FF00;
+    }
+    .half {
+      background: linear-gradient(to right, #00FF00 50%, black 50%);
+    }
+    .percent {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .message {
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    .critical {
+      animation: blink 1s step-start infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
     }
   </style>
 </head>
 <body>
-  <div id="screen"></div>
-  <div id="menuOverlay">
-    <p>[ SETTINGS ]</p>
-    <button onclick="resumeGame()">> Resume</button>
-    <button onclick="toggleSpeedCap()">> Toggle Speed Cap: <span id="speedCapStatus">ON</span></button>
-    <button onclick="closeGame()">> Exit Game</button>
-  </div>
-  <div class="controls">
-    <div class="fire">
-      <button onclick="shoot()">I</button>
-      <button onclick="toggleMenu()">MENU</button>
-    </div>
-    <div class="dpad">
-      <button onclick="moveUp()">↑</button>
-      <div class="dpad-buttons">
-        <button onclick="moveLeft()">←</button>
-        <button onclick="moveDown()">↓</button>
-        <button onclick="moveRight()">→</button>
-      </div>
-    </div>
-  </div>
-  <script>
-    const screen = document.getElementById("screen");
-    const menuOverlay = document.getElementById("menuOverlay");
-    const speedCapStatus = document.getElementById("speedCapStatus");
-    const width = 15;
-    const height = 22;
-    let interval = 1200;
-    const playerChar = "A";
-    const refillChar = "R";
-    let speedCap = true;
+<div class="bar" id="bar"></div>
+<div class="percent" id="percent">99%</div>
+<div class="message" id="message">PRESS SPACEBAR TO CONTINUE</div>
 
-    let grid = [];
-    let playerX = Math.floor(width / 2);
-    let playerY = height - 4;
-    let gameOver = false;
-    let gameInterval;
-    let ammo = 3;
-    let linesDropped = 0;
-    let trailX = playerX;
-    let gamePaused = false;
-let retryCount = 0;
+<script>
+const bar = document.getElementById("bar");
+const percentDisplay = document.getElementById("percent");
+const message = document.getElementById("message");
 
-    function initGrid() {
-      grid = [];
-      for (let i = 0; i < height; i++) {
-        grid.push(Array(width).fill(" "));
-      }
-      grid[playerY][playerX] = playerChar;
+let cells = 20;
+let barState = new Array(cells).fill(2); // 0 = empty, 1 = half, 2 = full
+let pressesRequired = randomPresses();
+let pressCount = 0;
+let interval;
+let pressure = 100;
+let gameOver = false;
+
+function drawBar() {
+  bar.innerHTML = "";
+  barState.forEach(cell => {
+    const el = document.createElement("div");
+    el.className = "cell";
+    if (cell === 2) el.classList.add("filled");
+    else if (cell === 1) el.classList.add("half");
+    bar.appendChild(el);
+  });
+
+  let perc = Math.floor(pressure);
+  percentDisplay.innerText = (perc < 10 ? "." : "") + (perc > 99 ? 99 : perc) + "%";
+
+  if (pressure <= 25 && !gameOver) {
+    percentDisplay.classList.add("critical");
+  } else {
+    percentDisplay.classList.remove("critical");
+  }
+}
+
+function dropCell() {
+  for (let i = barState.length - 1; i >= 0; i--) {
+    if (barState[i] === 2) {
+      barState[i] = 1;
+      pressure -= 2.5;
+      break;
+    } else if (barState[i] === 1) {
+      barState[i] = 0;
+      pressure -= 2.5;
+      break;
     }
+  }
+  if (pressure <= 0) {
+    pressure = 0;
+    clearInterval(interval);
+    message.innerText = ">>> BRUTE FAILURE - SYSTEM LOCKED";
+    gameOver = true;
+    setTimeout(reboot, 3000);
+  }
+  drawBar();
+}
 
-    function createWavyRow() {
-      const row = Array(width).fill("Z");
-      const direction = Math.random() < 0.5 ? -1 : 1;
-      const nextX = Math.max(1, Math.min(width - 2, trailX + direction));
-      const corner = nextX !== trailX;
-      row[nextX] = " ";
-      if (corner) {
-        row[trailX] = " ";
-        if (nextX + direction < width - 1 && nextX + direction > 0) {
-          row[nextX + direction] = " ";
-        }
-      }
-      const rChance = Math.min(0.3 + linesDropped / 150, 0.9);
-      if (Math.random() < rChance) {
-        const rPos = Math.floor(Math.random() * width);
-        if (row[rPos] === " ") row[rPos] = refillChar;
-      }
-      trailX = nextX;
-      return row;
+function raiseCell() {
+  for (let i = 0; i < barState.length; i++) {
+    if (barState[i] === 0) {
+      barState[i] = 1;
+      pressure += 2.5;
+      break;
+    } else if (barState[i] === 1) {
+      barState[i] = 2;
+      pressure += 2.5;
+      break;
     }
+  }
+  if (pressure > 99) pressure = 99;
+  drawBar();
+}
 
-    function dropRow() {
-      if (gameOver || gamePaused) return;
-      linesDropped++;
+function randomPresses() {
+  return Math.floor(Math.random() * 4) + 3; // 3–6
+}
 
-      if (grid[playerY - 1][playerX] === "Z") {
-        grid[playerY][playerX] = "X";
-        gameOver = true;
-        screen.innerText = renderGrid() + "\nYOU GOT SQUISHED. GAME OVER.";
-        setTimeout(() => {
-          screen.innerText = "REBOOTING...";
-          setTimeout(() => {
-            restartGame();
-          }, 2000);
-        }, 2000);
-        return;
-        return;
-      }
-
-      for (let i = height - 1; i > 0; i--) {
-        grid[i] = [...grid[i - 1]];
-      }
-
-      const newRow = createWavyRow();
-      grid[0] = newRow;
-
-      if (grid[playerY][playerX] === refillChar) {
-        ammo += 3;
-      }
-
-      // FIX: remove all A's before updating player position
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          if (grid[y][x] === playerChar) grid[y][x] = " ";
-        }
-      }
-
-      grid[playerY][playerX] = playerChar;
-      screen.innerText = renderGrid();
-
-      interval = speedCap ? Math.max(250, 1200 - linesDropped * 10) : Math.max(80, 1200 - linesDropped * 10);
-      clearInterval(gameInterval);
-      gameInterval = setInterval(dropRow, interval);
+document.addEventListener("keydown", function(e) {
+  if (gameOver) return;
+  if (e.key === " ") {
+    pressCount++;
+    if (pressCount >= pressesRequired) {
+      raiseCell();
+      pressesRequired = randomPresses();
+      pressCount = 0;
     }
+  }
+});
 
-    function renderGrid() {
-      return grid.map(row => row.join(" ")).join("\n") + "\n\nAMMO: " + ammo + "    RETRIES: " + retryCount;
-    }
+function reboot() {
+  message.innerText = ">>> SYSTEM REBOOTING...";
+  setTimeout(() => {
+    barState = new Array(cells).fill(2);
+    pressesRequired = randomPresses();
+    pressCount = 0;
+    pressure = 100;
+    gameOver = false;
+    message.innerText = "PRESS SPACEBAR TO CONTINUE";
+    drawBar();
+    start();
+  }, 2000);
+}
 
-    function moveLeft() {
-      if (gameOver || gamePaused) return;
-      if (playerX > 0 && grid[playerY][playerX - 1] !== "Z") {
-        grid[playerY][playerX] = " ";
-        playerX--;
-        grid[playerY][playerX] = playerChar;
-        screen.innerText = renderGrid();
-      }
-    }
+function start() {
+  drawBar();
+  interval = setInterval(() => {
+    dropCell();
+  }, 2000);
+}
 
-    function moveRight() {
-      if (gameOver || gamePaused) return;
-      if (playerX < width - 1 && grid[playerY][playerX + 1] !== "Z") {
-        grid[playerY][playerX] = " ";
-        playerX++;
-        grid[playerY][playerX] = playerChar;
-        screen.innerText = renderGrid();
-      }
-    }
-
-    function moveUp() {
-      if (gameOver || gamePaused) return;
-      if (playerY > height - 7 && grid[playerY - 1][playerX] !== "Z") {
-        grid[playerY][playerX] = " ";
-        playerY--;
-        grid[playerY][playerX] = playerChar;
-        screen.innerText = renderGrid();
-      }
-    }
-
-    function moveDown() {
-      if (gameOver || gamePaused) return;
-      if (playerY < height - 1 && grid[playerY + 1][playerX] !== "Z") {
-        grid[playerY][playerX] = " ";
-        playerY++;
-        grid[playerY][playerX] = playerChar;
-        screen.innerText = renderGrid();
-      }
-    }
-
-    function shoot() {
-      if (ammo <= 0 || gameOver || gamePaused) return;
-      ammo--;
-      for (let y = playerY - 1; y >= 0; y--) {
-        if (grid[y][playerX] === "Z") {
-          grid[y][playerX] = " ";
-          break;
-        }
-      }
-      screen.innerText = renderGrid();
-    }
-
-    function toggleMenu() {
-      gamePaused = !gamePaused;
-      menuOverlay.style.display = gamePaused ? "flex" : "none";
-    }
-
-    function toggleSpeedCap() {
-      speedCap = !speedCap;
-      speedCapStatus.textContent = speedCap ? "ON" : "OFF";
-    }
-
-    function resumeGame() {
-      toggleMenu();
-    }
-
-    function closeGame() {
-      location.reload();
-    }
-
-    
-    function restartGame() {
-      retryCount++;
-      playerX = Math.floor(width / 2);
-      playerY = height - 4;
-      ammo = 3;
-      linesDropped = 0;
-      trailX = playerX;
-      gameOver = false;
-      initGrid();
-      screen.innerText = renderGrid();
-      clearInterval(gameInterval);
-      gameInterval = setInterval(dropRow, interval);
-    }
-
-
-function startGame() {
-      initGrid();
-      screen.innerText = renderGrid();
-      gameInterval = setInterval(dropRow, interval);
-    }
-
-    document.addEventListener("DOMContentLoaded", startGame);
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "ArrowLeft") moveLeft();
-      else if (e.key === "ArrowRight") moveRight();
-      else if (e.key === "ArrowUp") moveUp();
-      else if (e.key === "ArrowDown") moveDown();
-      else if (e.key.toLowerCase() === "i" || e.key === " ") shoot();
-      else if (e.key.toLowerCase() === "m") toggleMenu();
-    });
-  </script>
+start();
+</script>
 </body>
 </html>
